@@ -29,9 +29,41 @@ async function run() {
       .db("collegeCollection")
       .collection("colleges");
 
+    const admissionCollection = client
+      .db("collegeCollection")
+      .collection("admission");
+
+    const usersCollection = client.db("collegeCollection").collection("users");
+
+    // all user
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      console.log(result);
+      res.send(result);
+    });
+
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const query = { email: user.email };
+      const existingUser = await usersCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "User Already exists" });
+      }
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
     //   show all college card
     app.get("/colleges", async (req, res) => {
       const result = await collegeCollection.find().toArray();
+      res.send(result);
+    });
+
+    // create = post
+    app.post("/admission", async (req, res) => {
+      const data = req.body;
+      const result = await admissionCollection.insertOne(data);
       res.send(result);
     });
 
