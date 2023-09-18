@@ -35,16 +35,51 @@ async function run() {
 
     const usersCollection = client.db("collegeCollection").collection("users");
 
-    // all user
-    app.get("/users", async (req, res) => {
-      const result = await usersCollection.find().toArray();
-      console.log(result);
+    // Search collage name API
+    const indexKey = { collegeName: 1 };
+    const indexOptions = { name: "collegeNameIndex" };
+    const result = await collegeCollection.createIndex(indexKey, indexOptions);
+    app.get("/searchCollegeName/:text", async (req, res) => {
+      // try {
+      //   const searchText = req.params.text;
+      //   const regex = new RegExp(searchText, "i");
+      //   const result = await collegeCollection
+      //     .find({ collegeName: { $regex: regex } })
+      //     .toArray();
+
+      //   res.status(200).json(result);
+      // } catch (error) {
+      //   console.error("Error while searching colleges:", error);
+      //   res.status(500).json({ message: "Internal server error" });
+      // }
+      const searchText = req.params.text;
+      const result = await collegeCollection
+        .find({
+          $or: [{ collegeName: { $regex: searchText, $options: "i" } }],
+        })
+        .toArray();
       res.send(result);
     });
 
+    // all user
+    app.get("/users", async (req, res) => {
+      const result = await usersCollection.find().toArray();
+      // console.log(result);
+      res.send(result);
+    });
+
+    // specific user profile by email
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const filter = { email: email };
+      const result = await usersCollection.findOne(filter);
+      res.send(result);
+    });
+
+    // user exist or not.If user exist it will not save but if user is new it saved
     app.post("/users", async (req, res) => {
       const user = req.body;
-      console.log(user);
+      // console.log(user);
       const query = { email: user.email };
       const existingUser = await usersCollection.findOne(query);
       if (existingUser) {
@@ -60,12 +95,36 @@ async function run() {
       res.send(result);
     });
 
-    // create = post
+    create = post;
     app.post("/admission", async (req, res) => {
       const data = req.body;
       const result = await admissionCollection.insertOne(data);
       res.send(result);
     });
+
+    // app.post("/admission/:email", async (req, res) => {
+    //   const admissionData = req.body;
+    //   const userEmail = req.params.email;
+
+    //   // Check if the user has already submitted the same college and subject
+    //   const existingAdmission = await admissionCollection.findOne({
+    //     email: userEmail,
+    //     college: admissionData.college,
+    //     subject: admissionData.subject,
+    //   });
+
+    //   if (existingAdmission) {
+    //     return res.status(400).json({ error: "Duplicate admission entry" });
+    //   }
+
+    //   // If not a duplicate, save the admission data
+    //   const result = await admissionCollection.insertOne(admissionData);
+    //   if (result.insertedId) {
+    //     res.json({ insertedId: result.insertedId });
+    //   } else {
+    //     res.status(500).json({ error: "Failed to save admission data" });
+    //   }
+    // });
 
     // details
     app.get("/details/:id", async (req, res) => {
